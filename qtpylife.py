@@ -30,7 +30,6 @@ class Cell(QWidget):
     def mousePressEvent(self, event):
 
         self.change_state()
-        print(self.alive)
 
     def change_state(self):
         if self.alive:
@@ -125,6 +124,7 @@ class MainWindow(QMainWindow):
         self.play_icon = self.style.standardIcon(QStyle.SP_MediaPlay)
         self.stop_icon = self.style.standardIcon(QStyle.SP_MediaStop)
         self.build_toolbar()
+        self.setWindowIcon(QIcon('glider.png'))
         self.show()
 
     def build_toolbar(self):
