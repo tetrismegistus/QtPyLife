@@ -1,8 +1,19 @@
+#!/usr/bin/env python3
+
 import sys
 import random
 from PyQt5.QtWidgets import QWidget, QApplication, QGridLayout, QMainWindow, QAction, qApp, QStyle
 from PyQt5.QtGui import QPainter, QColor, QIcon
 from PyQt5.QtCore import QBasicTimer
+from itertools import product
+
+'''
+File: qtpylife.py
+Description: an implementation of Conway's Game of Life in PyQt5
+Author: tetrismegistus
+Version .01 -- Initial Commit 12/27/17 tetrismegistus
+Version .02 -- use permutations for neighbor finding code
+'''
 
 
 class Cell(QWidget):
@@ -16,10 +27,10 @@ class Cell(QWidget):
     def paintEvent(self, e):
         qp = QPainter()
         qp.begin(self)
-        self.drawRectangles(qp)
+        self.draw_rectangles(qp)
         qp.end()
 
-    def drawRectangles(self, qp):
+    def draw_rectangles(self, qp):
 
         col = QColor(0, 0, 0)
         col.setNamedColor('#d4d4d4')
@@ -53,8 +64,8 @@ class Cell(QWidget):
             pass
 
 
+# noinspection PyArgumentList
 class Board(QWidget):
-
     def __init__(self):
         super().__init__()
         self.grid = QGridLayout()
@@ -63,7 +74,7 @@ class Board(QWidget):
         self.setLayout(self.grid)
         self.size_x = 30
         self.size_y = 30
-        board = [(i,j) for i in range(self.size_x) for j in range(self.size_y)]
+        board = [(i, j) for i in range(self.size_x) for j in range(self.size_y)]
         for position in board:
             cell = Cell()
             self.grid.addWidget(cell, *position)
@@ -91,24 +102,29 @@ class Board(QWidget):
                 cell = layout_item.widget()
                 cell.change_state()
 
-
     def count_neighbors(self, x, y, cell_to_analyze):
-        east = self.grid.itemAtPosition(x, (y + 1) % self.size_y).widget().alive
-        west = self.grid.itemAtPosition(x, (y - 1) % self.size_y).widget().alive
-        north = self.grid.itemAtPosition((x - 1) % self.size_x, y).widget().alive
-        south = self.grid.itemAtPosition((x + 1) % self.size_x, y).widget().alive
-        north_east = self.grid.itemAtPosition((x - 1) % self.size_x, (y + 1) % self.size_y).widget().alive
-        south_east = self.grid.itemAtPosition((x + 1) % self.size_x, (y + 1) % self.size_y).widget().alive
-        south_west = self.grid.itemAtPosition((x + 1) % self.size_x, (y - 1) % self.size_y).widget().alive
-        north_west = self.grid.itemAtPosition((x - 1) % self.size_x, (y - 1) % self.size_y).widget().alive
 
-        cell_to_analyze.live_neighbors = north + north_east + east + south_east + \
-                                                  south + south_west + west + north_west
+        operations = [[], []]
+        neighbors = 0
+
+        for operation in range(-1, 2):
+            operations[0].append((x + operation) % self.size_x)
+            operations[1].append((y + operation) % self.size_y)
+
+        coord_list = list(product(operations[0], operations[1]))  # create list of permutations of values
+        coord_list.remove((x, y))  # prevent cell from counting its self as a neighbor
+
+        for coord in coord_list:
+            # pdb.set_trace()
+            neighbors += self.grid.itemAtPosition(coord[0], coord[1]).widget().alive
+
+        cell_to_analyze.live_neighbors = neighbors
 
     def timer_start(self):
         self.timer.start(100, self)
 
 
+# noinspection PyArgumentList
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -116,8 +132,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(board)
         size_x = self.centralWidget().size_x
         size_y = self.centralWidget().size_y
-        self.setGeometry(300, 300, 15*size_x, 15*size_y)
-        self.setFixedSize(15*size_x, 15*size_y)
+        self.setGeometry(300, 300, 15 * size_x, 15 * size_y)
+        self.setFixedSize(15 * size_x, 15 * size_y)
         self.setWindowTitle('Game of Life')
         self.toolbar = self.addToolBar('Main')
         self.style = self.style()
@@ -127,12 +143,14 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon('glider.png'))
         self.show()
 
+    # noinspection PyUnresolvedReferences,PyUnresolvedReferences,PyUnresolvedReferences
     def build_toolbar(self):
         exit_action = QAction(QIcon('exit.png'), 'Exit', self)
         exit_action.setShortcut('Ctrl+Q')
         exit_action.triggered.connect(qApp.quit)
         self.toolbar.addAction(exit_action)
 
+        # noinspection PyAttributeOutsideInit
         self.timer_toggle = QAction(QIcon(self.play_icon), 'Play', self)
         self.timer_toggle.setShortcut('Ctrl+S')
         self.timer_toggle.triggered.connect(self.timer_switch)
@@ -160,6 +178,3 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = MainWindow()
     sys.exit(app.exec_())
-
-
-
